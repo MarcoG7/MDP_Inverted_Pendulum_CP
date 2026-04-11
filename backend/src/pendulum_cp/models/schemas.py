@@ -9,13 +9,13 @@ class TelemetryData(BaseModel):
   velocity: float           # cart velocity: x'
   angle: float              # pendulum angle: θ
   angular_velocity: float   # pendulum angular velocity: θ'
-  data_source: str          # active data source ("src-test" | "src-matlab" | "src-ip")
+  data_source: str          # active data source ("src-sim" | "src-matlab" | "src-ip")
 
 
 class SystemStatus(BaseModel):
   '''Overall system state returned by GET /status.'''
   is_running: bool
-  data_source: str = ""     # "src-test" | "src-matlab" | "src-ip"
+  data_source: str = ""     # "src-sim" | "src-matlab" | "src-ip"
   control_method: str = ""  # "ctrl-1" | "ctrl-2" | ...
   uptime: float = 0.0
 

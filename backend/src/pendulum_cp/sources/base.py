@@ -9,7 +9,7 @@ class DataSource(ABC):
   '''
 
   @abstractmethod
-  async def start(self, method: str) -> None:
+  async def start(self, control_method: str) -> None:
     '''Begin producing telemetry data.'''
     ...
   
