@@ -5,13 +5,14 @@ from pendulum_cp.models.schemas import SystemStatus
 from pendulum_cp.sources.base import DataSource
 from pendulum_cp.sources.simulation import SimulationSource
 from pendulum_cp.sources.matlab_script import MATLABScriptSource
+from pendulum_cp.sources.simulink import SimulinkSource
 
 PUSH_INTERVAL = 0.05  # seconds = 20 Hz
 
 SOURCE_MAP: dict[str, type[DataSource]] = {
   "src-sim": SimulationSource,
   "src-matlab": MATLABScriptSource,
-  # "src-simulink": SimulinkSource, ?
+  "src-simulink": SimulinkSource,
 }
 
 
