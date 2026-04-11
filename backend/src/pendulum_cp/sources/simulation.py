@@ -6,7 +6,7 @@ from src.pendulum_cp.models.schemas import TelemetryData
 
 
 class SimulationSource(DataSource):
-  def __init__(self):
+  def __init__(self, ctrl_method: str = ""):
     self._running: bool = False
     self._t0: float = 0.0
     self._elapsed_at_pause: float = 0.0
