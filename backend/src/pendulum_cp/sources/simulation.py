@@ -10,11 +10,9 @@ class SimulationSource(DataSource):
     self._running: bool = False
     self._t0: float = 0.0
     self._elapsed_at_pause: float = 0.0
-    self._control_method: str = ""
   
-  async def start(self, control_method: str) -> None:
+  async def start(self) -> None:
     '''Start (or resume) the signal generator.'''
-    self._control_method = control_method
     self._t0 = time() - self._elapsed_at_pause
     self._running = True
   

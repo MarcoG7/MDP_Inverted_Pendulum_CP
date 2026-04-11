@@ -5,11 +5,11 @@ from src.pendulum_cp.models.schemas import TelemetryData
 class DataSource(ABC):
   '''Abstract base class for all pendulum data sources.
   
-  Implemented by all data sources (test, MATLAB, physical hardware...)
+  Implemented by all data sources (Simulation, MATLAB, Simulink, Physical hardware...)
   '''
 
   @abstractmethod
-  async def start(self, control_method: str) -> None:
+  async def start(self) -> None:
     '''Begin producing telemetry data.'''
     ...
   
