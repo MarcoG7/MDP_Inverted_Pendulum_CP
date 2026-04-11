@@ -1,6 +1,7 @@
 import asyncio
 from fastapi import WebSocket
 
+from src.pendulum_cp.models.schemas import SystemStatus
 from src.pendulum_cp.sources.base import DataSource
 from src.pendulum_cp.sources.simulation import SimulationSource
 
@@ -60,6 +61,14 @@ class SessionManager:
     self._data_source_key = ""
     self._ctrl_method = ""
     return "Reset"
+
+  def get_status(self) -> SystemStatus:
+    '''Return the current system state.'''
+    return SystemStatus(
+      is_running=self._data_source.is_running() if self._data_source else False,
+      data_source=self._data_source_key,
+      ctrl_method=self._ctrl_method,
+    )
 
   def set_websocket(self, ws: WebSocket) -> None:
     '''Register the frontend WebSocket connection and start the loop if the source is already running.'''

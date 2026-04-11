@@ -88,3 +88,15 @@ async def test_session_stores_method_and_source_key(session):
   assert session._data_source_key == "src-sim"
   assert session._ctrl_method == "m1"
   await session.reset()
+
+async def test_get_status_reflects_state(session):
+  status = session.get_status()
+  assert not status.is_running
+  assert status.data_source == ""
+
+  await session.start("src-sim", "m1")
+  status = session.get_status()
+  assert status.is_running
+  assert status.data_source == "src-sim"
+  assert status.ctrl_method == "m1"
+  await session.reset()

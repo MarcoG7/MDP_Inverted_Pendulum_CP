@@ -16,7 +16,7 @@ class SystemStatus(BaseModel):
   '''Overall system state returned by GET /status.'''
   is_running: bool
   data_source: str = ""     # "src-sim" | "src-matlab" | "src-ip"
-  control_method: str = ""  # "PID" | "LQR" | ...
+  ctrl_method: str = ""  # "PID" | "LQR" | ...
   uptime: float = 0.0
 
 
