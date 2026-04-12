@@ -1,0 +1,51 @@
+.graph-container {
+  background-color: var(--mat-sys-surface-container-low);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--mat-sys-level1);
+  display: flex;
+  flex-direction: column;
+
+  &.large {
+    width: 100%;
+    height: 200px;
+  }
+
+  &.small {
+    width: 40%;
+    height: 150px;
+  }
+
+  .graph-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+
+    .graph-title {
+      font-size: 14px;
+      color: var(--mat-sys-on-surface);
+
+      strong {
+        color: var(--mat-sys-primary);
+      }
+    }
+
+    .graph-stats {
+      display: flex;
+      gap: 16px;
+
+      .stat {
+        font-size: 12px;
+        color: var(--mat-sys-on-surface-variant);
+      }
+    }
+  }
+
+  canvas {
+    width: 100% !important;
+    flex: 1;
+    min-height: 0;
+  }
+}

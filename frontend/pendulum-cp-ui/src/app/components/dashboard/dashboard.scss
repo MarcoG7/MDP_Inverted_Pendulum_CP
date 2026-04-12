@@ -1,0 +1,25 @@
+.dashboard-layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+
+  app-control-panel {
+    flex: 0 0 clamp(200px, 15%, 280px);
+  }
+
+  mat-card {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.db-graphs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
