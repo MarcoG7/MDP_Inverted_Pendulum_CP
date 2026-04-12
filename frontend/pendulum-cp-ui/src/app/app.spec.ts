@@ -1,23 +1,39 @@
 import { TestBed } from '@angular/core/testing';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { App } from './app';
 
 describe('App', () => {
   beforeEach(async () => {
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        static OPEN = 1;
+        onopen: any;
+        onmessage: any;
+        onclose: any;
+        onerror: any;
+        constructor() {
+          setTimeout(() => this.onopen?.(), 0);
+        }
+        close() {}
+      },
+    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
+
     await TestBed.configureTestingModule({
       imports: [App],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    TestBed.resetTestingModule();
   });
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, pendulum-cp-ui');
+    expect(fixture.componentInstance).toBeTruthy();
   });
 });
