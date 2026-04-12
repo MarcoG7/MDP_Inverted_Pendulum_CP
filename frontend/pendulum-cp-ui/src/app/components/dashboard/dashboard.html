@@ -1,0 +1,22 @@
+<div class="dashboard-layout">
+  <app-control-panel
+    (start)="start($event)"
+    (stop)="stop()"
+    (reset)="reset()"
+  />
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Dashboard - {{ formatTime(elapsedTime()) }}</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="db-graphs">
+        <app-realtime-graph #angleGraph [config]="angleConfig" />
+        <app-realtime-graph #angularVelocityGraph [config]="angularVelocityConfig" />
+        <app-realtime-graph #positionGraph [config]="positionConfig" />
+        <app-realtime-graph #velocityGraph [config]="velocityConfig" />
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
