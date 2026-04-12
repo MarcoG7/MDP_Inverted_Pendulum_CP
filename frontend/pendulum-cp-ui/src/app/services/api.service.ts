@@ -84,7 +84,7 @@ export class ApiService {
     const rows = this.buffer
       .map(
         (d) =>
-          `${d.timestamp},${d.position},${d.velocity},${d.angle},${d.angular_velocity},${d.data_source}`,
+          `${d.timestamp},${d.position},${d.velocity},${d.angle},${d.angular_velocity},${d.data_source}\n`,
       )
       .join('');
     this.chunks.push(rows);
