@@ -1,0 +1,37 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>Control Panel</mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <div class="cp-buttons">
+      <button mat-flat-button (click)="onStart()">Start</button>
+      <button mat-flat-button (click)="onStop()">Stop</button>
+      <button mat-stroked-button (click)="onReset()">Reset</button>
+      <button mat-stroked-button (click)="onExport()">Export CSV</button>
+    </div>
+
+    <mat-divider />
+
+    <div class="cp-options">
+      <mat-form-field appearance="outline">
+        <mat-label>Data Source</mat-label>
+        <mat-select [(ngModel)]="selectedDataSource">
+          <mat-option value="src-sim">Simulation</mat-option>
+          <mat-option value="src-matlab">MATLAB Script</mat-option>
+          <mat-option value="src-simulink">Simulink</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Control Method</mat-label>
+        <mat-select [(ngModel)]="selectedControlMethod">
+          <mat-option value="default">Default</mat-option>
+           <!-- Below are placeholder values -->
+          <mat-option value="default">PID</mat-option>
+          <mat-option value="default">LQR</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </mat-card-content>
+</mat-card>
