@@ -1,0 +1,14 @@
+<div class="graph-container" [ngClass]="size()">
+  <div class="graph-header">
+    <span class="graph-title">
+      {{ config().title }}:
+      <strong>{{ currentValue() !== null ? currentValue()!.toFixed(3) : '--' }}</strong>
+    </span>
+    <div class="graph-stats">
+      <span class="stat">Min: {{ minValue() !== null ? minValue()!.toFixed(3) : '--' }}</span>
+      <span class="stat">Max: {{ maxValue() !== null ? maxValue()!.toFixed(3) : '--' }}</span>
+      <span class="stat">Mean: {{ meanValue() !== null ? meanValue()!.toFixed(3) : '--' }}</span>
+    </div>
+  </div>
+  <canvas baseChart [type]="'line'" [data]="chartData" [options]="chartOptions"></canvas>
+</div>
