@@ -18,7 +18,7 @@ class MATLABScriptSource(DataSource):
 
   def _connect(self) -> None:
     import matlab.engine
-    self._eng = matlab.engine.connect_matlab()
+    self._eng = matlab.engine.start_matlab()
     self._eng.addpath(str(MATLAB_DIR), nargout=0)
   
   async def start(self) -> None:
