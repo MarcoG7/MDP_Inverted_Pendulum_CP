@@ -40,7 +40,7 @@ class SessionManager:
     if data_source is None:
       return f"Unknown source '{data_source_key}'"
     
-    self._data_source = data_source(ctrl_method=ctrl_method)
+    self._data_source = data_source()  # Need to fill control method later
     self._data_source_key = data_source_key
     self._ctrl_method = ctrl_method
     await self._data_source.start()

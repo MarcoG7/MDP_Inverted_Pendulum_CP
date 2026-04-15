@@ -1,8 +1,8 @@
 from time import time
 from math import sin, cos, pi
 
-from src.pendulum_cp.sources.base import DataSource
-from src.pendulum_cp.models.schemas import TelemetryData
+from pendulum_cp.sources.base import DataSource
+from pendulum_cp.models.schemas import TelemetryData
 
 
 class SimulationSource(DataSource):

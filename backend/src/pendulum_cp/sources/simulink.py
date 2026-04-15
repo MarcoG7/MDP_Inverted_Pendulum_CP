@@ -1,6 +1,7 @@
 from pathlib import Path
 from math import pi
 import asyncio
+import numpy as np
 
 from pendulum_cp.sources.base import DataSource
 from pendulum_cp.models.schemas import TelemetryData
@@ -20,7 +21,7 @@ class SimulinkSource(DataSource):
   stops automatically.
   '''
 
-  def __init__(self, method: str = ""):
+  def __init__(self, ctrl_method: str = ""):
     self._running = False
     self._eng = None
     self._time: list[float] = []
@@ -32,21 +33,36 @@ class SimulinkSource(DataSource):
   
   def _run_simulation(self) -> None:
     import matlab.engine
-    self._eng = matlab.engine.connect_matlab()
+    self._eng = matlab.engine.start_matlab()
     self._eng.addpath(str(SIMULINK_DIR), nargout=0)
     self._eng.cd(str(SIMULINK_DIR), nargout=0)
 
     # Run the setup script
     self._eng.run(SETUP_SCRIPT, nargout=0)
 
-    # Run the Simulink model
-    self._eng.sim(MODEL_NAME, nargout=0)
+    # Run the Simulink model with tighter solver tolerance to resolve algebraic loops
+    self._eng.eval(f"sim('{MODEL_NAME}');", nargout=0)
 
-    self._time   = [float(v)      for v   in self._eng.eval("x.time",                nargout=1)]
-    self._x      = [float(row[0]) for row in self._eng.eval("x.signals.values",      nargout=1)]
-    self._xd     = [float(row[0]) for row in self._eng.eval("xd.signals.values",     nargout=1)]
-    self._theta  = [float(row[0]) for row in self._eng.eval("theta.signals.values",  nargout=1)]
-    self._thetad = [float(row[0]) for row in self._eng.eval("thetad.signals.values", nargout=1)]
+    # Extract data from the workspace
+    self._eng.eval("extracted = x.time", nargout=0);
+    self._time = list(self._eng.workspace['extracted'])
+    self._time = np.array(self._eng.workspace['extracted']).flatten().tolist()
+
+    self._eng.eval("extracted = x.signals.values", nargout=0);
+    self._x = list(self._eng.workspace['extracted'])
+    self._x = np.array(self._eng.workspace['extracted']).flatten().tolist()
+
+    self._eng.eval("extracted = xd.signals.values", nargout=0);
+    self._xd = list(self._eng.workspace['extracted'])
+    self._xd = np.array(self._eng.workspace['extracted']).flatten().tolist()
+
+    self._eng.eval("extracted = theta.signals.values", nargout=0);
+    self._theta = list(self._eng.workspace['extracted'])
+    self._theta = np.array(self._eng.workspace['extracted']).flatten().tolist()
+
+    self._eng.eval("extracted = thetad.signals.values", nargout=0);
+    self._thetad = list(self._eng.workspace['extracted'])
+    self._thetad = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
   async def start(self) -> None:
     self._frame = 0
