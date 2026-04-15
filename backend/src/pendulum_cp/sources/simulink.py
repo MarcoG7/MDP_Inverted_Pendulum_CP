@@ -44,25 +44,35 @@ class SimulinkSource(DataSource):
     self._eng.eval(f"sim('{MODEL_NAME}');", nargout=0)
 
     # Extract data from the workspace
-    self._eng.eval("extracted = x.time;", nargout=0);
-    self._time = list(self._eng.workspace['extracted'])
-    self._time = np.array(self._eng.workspace['extracted']).flatten().tolist()
+    self._eng.eval("extracted = x.time;", nargout=0)
+    time = np.array(self._eng.workspace['extracted']).flatten()
 
-    self._eng.eval("extracted = x.signals.values;", nargout=0);
-    self._x = list(self._eng.workspace['extracted'])
-    self._x = np.array(self._eng.workspace['extracted']).flatten().tolist()
+    self._eng.eval("extracted = x.signals.values;", nargout=0)
+    x = np.array(self._eng.workspace['extracted']).flatten()
 
-    self._eng.eval("extracted = xd.signals.values;", nargout=0);
-    self._xd = list(self._eng.workspace['extracted'])
-    self._xd = np.array(self._eng.workspace['extracted']).flatten().tolist()
+    self._eng.eval("extracted = xd.signals.values;", nargout=0)
+    xd = np.array(self._eng.workspace['extracted']).flatten()
 
-    self._eng.eval("extracted = theta.signals.values;", nargout=0);
-    self._theta = list(self._eng.workspace['extracted'])
-    self._theta = np.array(self._eng.workspace['extracted']).flatten().tolist()
+    self._eng.eval("extracted = theta.signals.values;", nargout=0)
+    theta = np.array(self._eng.workspace['extracted']).flatten()
 
-    self._eng.eval("extracted = thetad.signals.values;", nargout=0);
-    self._thetad = list(self._eng.workspace['extracted'])
-    self._thetad = np.array(self._eng.workspace['extracted']).flatten().tolist()
+    self._eng.eval("extracted = thetad.signals.values;", nargout=0)
+    thetad = np.array(self._eng.workspace['extracted']).flatten()
+
+    # Downsample to TARGET_DT so replay runs at real-time speed.
+    # The solver may run at a much finer timestep (e.g. 1 kHz), but the
+    # push loop only fires at 20 Hz — keeping every raw frame would make
+    # 1 s of simulation take ~50 s of wall time.
+    TARGET_DT = 0.05  # must match PUSH_INTERVAL in session.py
+    target_times = np.arange(time[0], time[-1], TARGET_DT)
+    indices = np.searchsorted(time, target_times)
+    indices = np.unique(np.clip(indices, 0, len(time) - 1))
+
+    self._time = time[indices].tolist()
+    self._x = x[indices].tolist()
+    self._xd = xd[indices].tolist()
+    self._theta = theta[indices].tolist()
+    self._thetad = thetad[indices].tolist()
 
   async def start(self) -> None:
     self._frame = 0
