@@ -44,23 +44,23 @@ class SimulinkSource(DataSource):
     self._eng.eval(f"sim('{MODEL_NAME}');", nargout=0)
 
     # Extract data from the workspace
-    self._eng.eval("extracted = x.time", nargout=0);
+    self._eng.eval("extracted = x.time;", nargout=0);
     self._time = list(self._eng.workspace['extracted'])
     self._time = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
-    self._eng.eval("extracted = x.signals.values", nargout=0);
+    self._eng.eval("extracted = x.signals.values;", nargout=0);
     self._x = list(self._eng.workspace['extracted'])
     self._x = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
-    self._eng.eval("extracted = xd.signals.values", nargout=0);
+    self._eng.eval("extracted = xd.signals.values;", nargout=0);
     self._xd = list(self._eng.workspace['extracted'])
     self._xd = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
-    self._eng.eval("extracted = theta.signals.values", nargout=0);
+    self._eng.eval("extracted = theta.signals.values;", nargout=0);
     self._theta = list(self._eng.workspace['extracted'])
     self._theta = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
-    self._eng.eval("extracted = thetad.signals.values", nargout=0);
+    self._eng.eval("extracted = thetad.signals.values;", nargout=0);
     self._thetad = list(self._eng.workspace['extracted'])
     self._thetad = np.array(self._eng.workspace['extracted']).flatten().tolist()
 
