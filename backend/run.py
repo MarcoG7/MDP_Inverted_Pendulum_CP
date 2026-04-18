@@ -41,6 +41,8 @@ def _setup_logging(log_path: Path):
                 logging.info(msg.rstrip())
         def flush(self):
             pass
+        def isatty(self):
+            return False
 
     sys.stdout = _PrintToLog()
     sys.stderr = _PrintToLog()
