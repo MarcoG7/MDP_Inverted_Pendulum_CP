@@ -16,16 +16,38 @@ source backend/.venv/bin/activate
 pip install pyinstaller --quiet
 pyinstaller packaging/pendulum.spec --distpath packaging/dist --workpath packaging/build --noconfirm
 
-echo "==> Creating desktop shortcut..."
-DESKTOP_FILE="$HOME/.local/share/applications/inverted-pendulum-cp.desktop"
+echo "==> Creating launcher and desktop shortcut..."
 INSTALL_DIR="$REPO_ROOT/packaging/dist/InvertedPendulumCP"
+LAUNCHER="$INSTALL_DIR/launch.sh"
+DESKTOP_FILE="$HOME/.local/share/applications/inverted-pendulum-cp.desktop"
+
+# Launcher script: finds an available terminal emulator and runs the app inside it
+cat > "$LAUNCHER" <<'LAUNCHER_EOF'
+#!/usr/bin/env bash
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP="$APP_DIR/InvertedPendulumCP"
+for term in gnome-terminal konsole xfce4-terminal lxterminal xterm; do
+  if command -v "$term" &>/dev/null; then
+    case "$term" in
+      gnome-terminal) gnome-terminal -- "$APP" ;;
+      konsole)        konsole --hold -e "$APP" ;;
+      *)              "$term" -e "$APP" ;;
+    esac
+    exit 0
+  fi
+done
+# No terminal found — run directly (no console output visible)
+"$APP"
+LAUNCHER_EOF
+chmod +x "$LAUNCHER"
+
 cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Name=Inverted Pendulum CP
 Comment=Inverted Pendulum Control Panel
-Exec=$INSTALL_DIR/InvertedPendulumCP
+Exec=$LAUNCHER
 Type=Application
-Terminal=true
+Terminal=false
 Categories=Education;Science;
 EOF
 chmod +x "$DESKTOP_FILE"
