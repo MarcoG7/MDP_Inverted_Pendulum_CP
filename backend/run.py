@@ -9,6 +9,41 @@ import os
 import threading
 import webbrowser
 import socket
+from pathlib import Path
+
+
+def _get_log_path() -> Path:
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home()))
+    else:
+        base = Path.home() / ".local" / "share"
+    log_dir = base / "InvertedPendulumCP"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir / "app.log"
+
+
+def _setup_logging(log_path: Path):
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
+    handler = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=1, encoding="utf-8")
+    handler.setFormatter(fmt)
+
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
+
+    # Redirect print() / sys.stderr so existing [Server] / [MATLAB] messages go to the file
+    class _PrintToLog:
+        def write(self, msg):
+            if msg.strip():
+                logging.info(msg.rstrip())
+        def flush(self):
+            pass
+
+    sys.stdout = _PrintToLog()
+    sys.stderr = _PrintToLog()
 
 
 def _inject_matlab_path():
@@ -18,20 +53,17 @@ def _inject_matlab_path():
     components reference the MATLAB installation directory at absolute paths.
     We locate the MATLAB installation at runtime and inject its Python engine.
     """
+    import shutil
+
     candidates = []
 
-    # 1. Explicit env var (user or sysadmin can set this)
     if os.environ.get("MATLAB_ROOT"):
         candidates.append(os.environ["MATLAB_ROOT"])
 
-    # 2. Derive from the `matlab` executable on PATH
-    import shutil
     matlab_exe = shutil.which("matlab")
     if matlab_exe:
-        # matlab -> .../bin/matlab  =>  root is two levels up
         candidates.append(os.path.dirname(os.path.dirname(matlab_exe)))
 
-    # 3. Common installation prefixes (Linux / Windows)
     search_roots = [
         "/usr/local/MATLAB",
         "/opt/MATLAB",
@@ -40,7 +72,7 @@ def _inject_matlab_path():
     ]
     for root in search_roots:
         if os.path.isdir(root):
-            for entry in sorted(os.listdir(root), reverse=True):  # latest release first
+            for entry in sorted(os.listdir(root), reverse=True):
                 candidates.append(os.path.join(root, entry))
 
     for matlab_root in candidates:
@@ -55,7 +87,6 @@ def _inject_matlab_path():
 
 
 def _check_port(port: int) -> bool:
-    """Return True if the port is already in use."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
@@ -90,12 +121,23 @@ def open_browser():
 if __name__ == "__main__":
     import uvicorn
 
+    log_path = _get_log_path()
+
+    # Print log location to the real stdout before redirecting it
+    print(f"Logging to: {log_path}", flush=True)
+
+    _setup_logging(log_path)
+
+    print("[run.py] Starting Inverted Pendulum CP...", flush=True)
+
     _inject_matlab_path()
 
     if _check_port(8000):
-        print("[run.py] ERROR: Port 8000 is already in use.", flush=True)
-        print("[run.py] Another instance may still be running. Close it and try again.", flush=True)
-        input("Press Enter to exit...")
+        print(
+            "[run.py] ERROR: Port 8000 is already in use. "
+            "Another instance may still be running.",
+            flush=True,
+        )
         sys.exit(1)
 
     from pendulum_cp.main import app
@@ -105,7 +147,6 @@ if __name__ == "__main__":
         mount_frontend(app, static_dir)
         threading.Timer(1.5, open_browser).start()
     else:
-        print("[run.py] WARNING: static/ not found — frontend will not be served.")
-        print("[run.py] Build Angular first: cd frontend/pendulum-cp-ui && ng build")
+        print("[run.py] WARNING: static/ not found — frontend will not be served.", flush=True)
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="warning")
+    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
