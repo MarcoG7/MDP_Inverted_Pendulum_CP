@@ -1,5 +1,9 @@
 <div class="dashboard-layout">
   <app-control-panel
+    [loadingStage]="loadingStage()"
+    [loadingMessage]="loadingMessage()"
+    [engineReady]="engineReady()"
+    [simulationReady]="simulationReady()"
     (start)="start($event)"
     (stop)="stop()"
     (reset)="reset()"

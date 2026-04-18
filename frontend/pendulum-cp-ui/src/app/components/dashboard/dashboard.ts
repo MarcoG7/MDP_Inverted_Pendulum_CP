@@ -16,6 +16,11 @@ export class Dashboard {
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly loadingStage = this.api.loadingStage;
+  readonly loadingMessage = this.api.loadingMessage;
+  readonly engineReady = this.api.engineReady;
+  readonly simulationReady = this.api.simulationReady;
+
   elapsedTime = signal(0);
 
   private readonly angleGraph = viewChild<RealtimeGraph>('angleGraph');

@@ -5,11 +5,18 @@
 
   <mat-card-content>
     <div class="cp-buttons">
-      <button mat-flat-button (click)="onStart()">Start</button>
+      <button mat-flat-button (click)="onStart()" [disabled]="isLoading">Start</button>
       <button mat-flat-button (click)="onStop()">Stop</button>
       <button mat-stroked-button (click)="onReset()">Reset</button>
       <button mat-stroked-button (click)="onExport()">Export CSV</button>
     </div>
+
+    @if (isLoading) {
+      <div class="cp-loading">
+        <mat-progress-bar mode="indeterminate" />
+        <span class="cp-loading-message">{{ activeLoadingMessage }}</span>
+      </div>
+    }
 
     <mat-divider />
 
@@ -33,5 +40,52 @@
         </mat-select>
       </mat-form-field>
     </div>
+
+    @if (isSimulink) {
+      <mat-divider />
+
+      <div class="cp-params">
+        <span class="cp-params-title">Simulation Parameters</span>
+
+        <div class="cp-params-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Cart Mass (kg)</mat-label>
+            <input matInput type="number" step="any" min="0" [(ngModel)]="params.cart_mass" name="cart_mass">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Pendulum Mass (kg)</mat-label>
+            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_mass" name="pendulum_mass">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Pendulum Length (m)</mat-label>
+            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_length" name="pendulum_length">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Cart Friction (N/m/s)</mat-label>
+            <input matInput type="number" step="any" min="0" [(ngModel)]="params.cart_friction" name="cart_friction">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Pendulum Damping (N·m·rad⁻¹·s⁻¹)</mat-label>
+            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_damping" name="pendulum_damping">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Duration (s)</mat-label>
+            <input matInput type="number" step="1" min="1" [(ngModel)]="params.stop_time" name="stop_time">
+          </mat-form-field>
+        </div>
+
+        <div class="cp-params-actions">
+          <button mat-flat-button (click)="onSaveParams()" [disabled]="isLoading">
+            Save &amp; Recompile
+          </button>
+          <button mat-stroked-button (click)="onResetParams()">Reset to Defaults</button>
+        </div>
+      </div>
+    }
   </mat-card-content>
 </mat-card>
