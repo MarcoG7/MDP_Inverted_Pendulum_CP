@@ -25,19 +25,7 @@ DESKTOP_FILE="$HOME/.local/share/applications/inverted-pendulum-cp.desktop"
 cat > "$LAUNCHER" <<'LAUNCHER_EOF'
 #!/usr/bin/env bash
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP="$APP_DIR/InvertedPendulumCP"
-for term in gnome-terminal konsole xfce4-terminal lxterminal xterm; do
-  if command -v "$term" &>/dev/null; then
-    case "$term" in
-      gnome-terminal) gnome-terminal -- "$APP" ;;
-      konsole)        konsole --hold -e "$APP" ;;
-      *)              "$term" -e "$APP" ;;
-    esac
-    exit 0
-  fi
-done
-# No terminal found — run directly (no console output visible)
-"$APP"
+"$APP_DIR/InvertedPendulumCP"
 LAUNCHER_EOF
 chmod +x "$LAUNCHER"
 
