@@ -75,5 +75,16 @@ class EngineManager:
       print("[MATLAB Engine] Clearing workspace.", flush=True)
       self._engine.eval("clear all;", nargout=0)
 
+  def shutdown(self) -> None:
+    """Quit the MATLAB engine, terminating the MATLAB process."""
+    if self._engine:
+      print("[MATLAB Engine] Shutting down.", flush=True)
+      try:
+        self._engine.quit()
+      except Exception:
+        pass
+      self._engine = None
+      self._ready = False
+
 
 engine_manager = EngineManager()

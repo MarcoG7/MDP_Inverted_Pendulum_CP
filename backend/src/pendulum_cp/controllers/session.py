@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import WebSocket
 
 from pendulum_cp.models.schemas import SimulationParams, SystemStatus
@@ -29,6 +30,7 @@ class SessionManager:
     self._task: asyncio.Task | None = None
     self._loading_stage: str | None = None
     self._loading_message: str = ""
+    self._shutdown_task: asyncio.Task | None = None
 
   # ------------------------------------------------------------------
   # Start / Stop / Reset
@@ -127,6 +129,9 @@ class SessionManager:
 
   async def set_websocket(self, ws: WebSocket) -> None:
     print("[Session] Client connected.", flush=True)
+    if self._shutdown_task and not self._shutdown_task.done():
+      self._shutdown_task.cancel()
+      self._shutdown_task = None
     self._ws = ws
     await self._push_status()
     if not engine_manager.is_ready:
@@ -149,6 +154,12 @@ class SessionManager:
     print("[Session] Client disconnected.", flush=True)
     self._ws = None
     self._cancel_push_loop()
+    self._shutdown_task = asyncio.create_task(self._auto_shutdown())
+
+  async def _auto_shutdown(self) -> None:
+    await asyncio.sleep(10)
+    print("[Session] No reconnection after 10s — shutting down.", flush=True)
+    os._exit(0)
 
   # ------------------------------------------------------------------
   # Loading stage helpers

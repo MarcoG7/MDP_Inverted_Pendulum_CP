@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
   simulink_runner.schedule_after_engine()
   yield
   print("[Server] Shutting down.", flush=True)
+  engine_manager.shutdown()
 
 
 app = FastAPI(title="MDP - Inverted Pendulum CP API", lifespan=lifespan)
