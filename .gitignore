@@ -27,4 +27,5 @@ Thumbs.db
 # Simulink
 *.slxc
 *.slx.r2022b
+*.slx.autosave
 slprj/

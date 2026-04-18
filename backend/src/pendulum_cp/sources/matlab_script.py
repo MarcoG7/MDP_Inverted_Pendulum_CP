@@ -1,6 +1,7 @@
 from pathlib import Path
 from math import pi
 import asyncio
+import time
 
 from pendulum_cp.sources.base import DataSource
 from pendulum_cp.models.schemas import TelemetryData
@@ -17,26 +18,36 @@ class MATLABScriptSource(DataSource):
     self._dt: float = 0.05  # Time step per get_data(), this matches the push loop rate
 
   def _connect(self) -> None:
+    print("[MATLAB Script] Starting engine...", flush=True)
+    t0 = time.time()
     import matlab.engine
     self._eng = matlab.engine.start_matlab()
     self._eng.addpath(str(MATLAB_DIR), nargout=0)
-  
-  async def start(self) -> None:
+    print(f"[MATLAB Script] Engine ready. ({time.time() - t0:.1f}s)", flush=True)
+
+  async def start(self, on_progress=None) -> None:
+    print("[MATLAB Script] Starting...", flush=True)
     await asyncio.to_thread(self._connect)
     self._t = 0.0
     self._y = [-3.0, 00, pi + 0.1, 0.0]
     self._running = True
-  
+    print("[MATLAB Script] Running.", flush=True)
+
   async def stop(self) -> None:
     self._running = False
-  
+    print("[MATLAB Script] Stopped.", flush=True)
+
   async def reset(self) -> None:
     self._running = False
     self._t = 0.0
     self._y = []
     if self._eng:
+      print("[MATLAB Script] Shutting down engine...", flush=True)
       await asyncio.to_thread(self._eng.quit)
       self._eng = None
+      print("[MATLAB Script] Engine stopped. Reset complete.", flush=True)
+    else:
+      print("[MATLAB Script] Reset.", flush=True)
   
   def _step(self) -> None:
     import matlab

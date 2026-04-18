@@ -1,87 +1,49 @@
-from pathlib import Path
-from math import pi
 import asyncio
-import numpy as np
+from math import pi
 
-from pendulum_cp.sources.base import DataSource
+from pendulum_cp.sources.base import DataSource, ProgressCallback
+from pendulum_cp.sources.simulink_runner import simulink_runner
 from pendulum_cp.models.schemas import TelemetryData
 
 
-SIMULINK_DIR = Path(__file__).resolve().parents[4] / "simulations" / "simulink"
-MODEL_NAME = "nonlinear_model_IP"
-SETUP_SCRIPT = "IP"
-
-
 class SimulinkSource(DataSource):
-  '''Runs the Simulink model once and replays the results in real-time
-  
-  start() blocks while MATLAB executes the full simulation, then loads all 
-  signal data into memory. get_data() replays the frames sequentially. When
-  all frames are exhausted, is_running() returns False and the push loop 
-  stops automatically.
+  '''Replays precompiled Simulink results in real-time.
+
+  The actual MATLAB execution lives in SimulinkRunner. This source copies
+  the stored results on start() and replays them frame-by-frame at 20 Hz.
+  If the runner hasn't finished compiling yet, start() waits for it.
   '''
 
   def __init__(self, ctrl_method: str = ""):
     self._running = False
-    self._eng = None
     self._time: list[float] = []
     self._x: list[float] = []
     self._xd: list[float] = []
     self._theta: list[float] = []
     self._thetad: list[float] = []
     self._frame: int = 0
-  
-  def _run_simulation(self) -> None:
-    import matlab.engine
-    self._eng = matlab.engine.start_matlab()
-    self._eng.addpath(str(SIMULINK_DIR), nargout=0)
-    self._eng.cd(str(SIMULINK_DIR), nargout=0)
 
-    # Run the setup script
-    self._eng.run(SETUP_SCRIPT, nargout=0)
+  async def start(self, on_progress: ProgressCallback = None) -> None:
+    if not simulink_runner.has_results:
+      print("[Simulink] Waiting for precompilation to finish...", flush=True)
+      if on_progress:
+        await on_progress("running_simulation", "Running Simulink model...")
+      await asyncio.to_thread(simulink_runner._results_event.wait)
 
-    # Run the Simulink model with tighter solver tolerance to resolve algebraic loops
-    self._eng.eval(f"sim('{MODEL_NAME}');", nargout=0)
-
-    # Extract data from the workspace
-    self._eng.eval("extracted = x.time;", nargout=0)
-    time = np.array(self._eng.workspace['extracted']).flatten()
-
-    self._eng.eval("extracted = x.signals.values;", nargout=0)
-    x = np.array(self._eng.workspace['extracted']).flatten()
-
-    self._eng.eval("extracted = xd.signals.values;", nargout=0)
-    xd = np.array(self._eng.workspace['extracted']).flatten()
-
-    self._eng.eval("extracted = theta.signals.values;", nargout=0)
-    theta = np.array(self._eng.workspace['extracted']).flatten()
-
-    self._eng.eval("extracted = thetad.signals.values;", nargout=0)
-    thetad = np.array(self._eng.workspace['extracted']).flatten()
-
-    # Downsample to TARGET_DT so replay runs at real-time speed.
-    # The solver may run at a much finer timestep (e.g. 1 kHz), but the
-    # push loop only fires at 20 Hz — keeping every raw frame would make
-    # 1 s of simulation take ~50 s of wall time.
-    TARGET_DT = 0.05  # must match PUSH_INTERVAL in session.py
-    target_times = np.arange(time[0], time[-1], TARGET_DT)
-    indices = np.searchsorted(time, target_times)
-    indices = np.unique(np.clip(indices, 0, len(time) - 1))
-
-    self._time = time[indices].tolist()
-    self._x = x[indices].tolist()
-    self._xd = xd[indices].tolist()
-    self._theta = theta[indices].tolist()
-    self._thetad = thetad[indices].tolist()
-
-  async def start(self) -> None:
-    self._frame = 0
-    await asyncio.to_thread(self._run_simulation)
+    time, x, xd, theta, thetad = simulink_runner.get_results()
+    self._time   = list(time)
+    self._x      = list(x)
+    self._xd     = list(xd)
+    self._theta  = list(theta)
+    self._thetad = list(thetad)
+    self._frame  = 0
     self._running = True
+    print(f"[Simulink] Replay started — {len(self._time)} frames.", flush=True)
 
   async def stop(self) -> None:
     self._running = False
-  
+    print("[Simulink] Stopped.", flush=True)
+
   async def reset(self) -> None:
     self._running = False
     self._frame = 0
@@ -90,10 +52,8 @@ class SimulinkSource(DataSource):
     self._xd = []
     self._theta = []
     self._thetad = []
-    if self._eng:
-      await asyncio.to_thread(self._eng.quit)
-      self._eng = None
-    
+    print("[Simulink] Reset.", flush=True)
+
   async def get_data(self) -> TelemetryData:
     data = TelemetryData(
       timestamp=round(self._time[self._frame], 3),
@@ -107,6 +67,6 @@ class SimulinkSource(DataSource):
     if self._frame >= len(self._time):
       self._running = False
     return data
-  
+
   def is_running(self) -> bool:
     return self._running
