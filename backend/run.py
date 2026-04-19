@@ -201,31 +201,34 @@ if __name__ == "__main__":
     import uvicorn
 
     log_path = _get_log_path()
-
-    # Print log location to the real stdout before redirecting it
-    print(f"Logging to: {log_path}", flush=True)
-
+    # Set up logging BEFORE any print() — on Windows windowed builds sys.stdout is None
     _setup_logging(log_path)
 
-    print("[run.py] Starting Inverted Pendulum CP...", flush=True)
+    try:
+        print(f"[run.py] Log file: {log_path}", flush=True)
+        print("[run.py] Starting Inverted Pendulum CP...", flush=True)
 
-    _inject_matlab_path()
+        _inject_matlab_path()
 
-    if _check_port(8000):
-        print(
-            "[run.py] ERROR: Port 8000 is already in use. "
-            "Another instance may still be running.",
-            flush=True,
-        )
-        sys.exit(1)
+        if _check_port(8000):
+            print(
+                "[run.py] ERROR: Port 8000 is already in use. "
+                "Another instance may still be running.",
+                flush=True,
+            )
+            sys.exit(1)
 
-    from pendulum_cp.main import app
+        from pendulum_cp.main import app
 
-    static_dir = get_static_dir()
-    if os.path.isdir(static_dir):
-        mount_frontend(app, static_dir)
-        threading.Timer(1.5, open_browser).start()
-    else:
-        print("[run.py] WARNING: static/ not found — frontend will not be served.", flush=True)
+        static_dir = get_static_dir()
+        if os.path.isdir(static_dir):
+            mount_frontend(app, static_dir)
+            threading.Timer(1.5, open_browser).start()
+        else:
+            print("[run.py] WARNING: static/ not found — frontend will not be served.", flush=True)
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    except Exception:
+        import logging
+        import traceback
+        logging.error("[run.py] Fatal startup error:\n%s", traceback.format_exc())

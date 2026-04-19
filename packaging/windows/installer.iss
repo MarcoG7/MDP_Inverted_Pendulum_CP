@@ -46,11 +46,27 @@ Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait
 [Code]
 function MatlabInstalled(): Boolean;
 var
-  Path: String;
+  SubKeys: TArrayOfString;
+  MatlabRoot: String;
+  I: Integer;
 begin
-  // Best-effort check: look for MATLAB in the registry
-  Result := RegQueryStringValue(HKLM, 'SOFTWARE\MathWorks\MATLAB', 'MATLABROOT', Path)
-         or RegQueryStringValue(HKCU, 'SOFTWARE\MathWorks\MATLAB', 'MATLABROOT', Path);
+  Result := False;
+  // MATLAB writes version-specific subkeys: SOFTWARE\MathWorks\MATLAB\R20XXx
+  if RegGetSubkeyNames(HKLM, 'SOFTWARE\MathWorks\MATLAB', SubKeys) then
+    for I := 0 to GetArrayLength(SubKeys) - 1 do
+      if RegQueryStringValue(HKLM, 'SOFTWARE\MathWorks\MATLAB\' + SubKeys[I], 'MATLABROOT', MatlabRoot) then
+      begin
+        Result := True;
+        Exit;
+      end;
+  // Also check 32-bit registry view on 64-bit Windows
+  if not Result and RegGetSubkeyNames(HKLM32, 'SOFTWARE\MathWorks\MATLAB', SubKeys) then
+    for I := 0 to GetArrayLength(SubKeys) - 1 do
+      if RegQueryStringValue(HKLM32, 'SOFTWARE\MathWorks\MATLAB\' + SubKeys[I], 'MATLABROOT', MatlabRoot) then
+      begin
+        Result := True;
+        Exit;
+      end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
