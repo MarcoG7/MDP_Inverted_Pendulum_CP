@@ -2,12 +2,31 @@
 # Run from the repo root: pyinstaller packaging/pendulum.spec
 
 import os
+import sys
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_all
 
 block_cipher = None
 
 # Collect all submodules from the backend package
 numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all("numpy")
+
+# MATLAB's matlabmultidimarrayforpython.pyd is built against Python's stable ABI
+# and imports from python3.dll (not python3XX.dll). PyInstaller bundles python3XX.dll
+# but not the ABI3 forwarder, so we add it explicitly.
+extra_binaries = []
+if sys.platform == "win32":
+    # In a venv, sys.executable is in venv/Scripts (no DLLs); python3.dll lives
+    # next to the base interpreter. base_prefix falls back to prefix when not in a venv.
+    for candidate_dir in (sys.base_prefix, os.path.dirname(sys.executable)):
+        python3_dll = os.path.join(candidate_dir, "python3.dll")
+        if os.path.isfile(python3_dll):
+            extra_binaries.append((python3_dll, "."))
+            break
+    else:
+        raise FileNotFoundError(
+            "python3.dll not found — required at runtime by MATLAB's ABI3 pyd. "
+            "Looked in sys.base_prefix and the executable dir."
+        )
 
 hidden_imports = (
     collect_submodules("pendulum_cp")
@@ -42,7 +61,7 @@ datas = [
 a = Analysis(
     [os.path.join(repo_root, "backend", "run.py")],
     pathex=[os.path.join(repo_root, "backend", "src")],
-    binaries=numpy_binaries,
+    binaries=numpy_binaries + extra_binaries,
     datas=datas + numpy_datas,
     hiddenimports=hidden_imports,
     hookspath=[],

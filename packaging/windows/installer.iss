@@ -24,6 +24,10 @@ WizardStyle=modern
 ; Require MATLAB — show a warning if not detected
 ; (detection is best-effort via registry; MATLAB doesn't always write a key)
 MinVersion=10.0
+; Run the installer as 64-bit so HKLM points to the 64-bit registry view where MATLAB
+; is actually registered (otherwise HKLM resolves to Wow6432Node and misses it).
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -51,15 +55,16 @@ var
   I: Integer;
 begin
   Result := False;
-  // MATLAB writes version-specific subkeys: SOFTWARE\MathWorks\MATLAB\R20XXx
-  if RegGetSubkeyNames(HKLM, 'SOFTWARE\MathWorks\MATLAB', SubKeys) then
+  // MATLAB writes subkeys keyed by internal version (e.g. '25.2' for R2025b).
+  // Check the 64-bit registry view first, since MATLAB x64 registers there.
+  if RegGetSubkeyNames(HKLM64, 'SOFTWARE\MathWorks\MATLAB', SubKeys) then
     for I := 0 to GetArrayLength(SubKeys) - 1 do
-      if RegQueryStringValue(HKLM, 'SOFTWARE\MathWorks\MATLAB\' + SubKeys[I], 'MATLABROOT', MatlabRoot) then
+      if RegQueryStringValue(HKLM64, 'SOFTWARE\MathWorks\MATLAB\' + SubKeys[I], 'MATLABROOT', MatlabRoot) then
       begin
         Result := True;
         Exit;
       end;
-  // Also check 32-bit registry view on 64-bit Windows
+  // Fallback: 32-bit registry view, in case of a 32-bit MATLAB (rare).
   if not Result and RegGetSubkeyNames(HKLM32, 'SOFTWARE\MathWorks\MATLAB', SubKeys) then
     for I := 0 to GetArrayLength(SubKeys) - 1 do
       if RegQueryStringValue(HKLM32, 'SOFTWARE\MathWorks\MATLAB\' + SubKeys[I], 'MATLABROOT', MatlabRoot) then
