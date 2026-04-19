@@ -13,12 +13,14 @@ hidden_imports = (
     + collect_submodules("fastapi")
     + collect_submodules("anyio")
     + collect_submodules("starlette")
+    + collect_submodules("numpy")
     + [
         "uvicorn.logging",
         "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto",
         "uvicorn.protocols.websockets.auto",
         "uvicorn.lifespan.on",
+        "numpy",
         # matlab.engine is NOT bundled — it is loaded from the MATLAB
         # installation at runtime by run.py's _inject_matlab_path()
     ]
