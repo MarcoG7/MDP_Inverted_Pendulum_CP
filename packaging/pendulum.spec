@@ -2,25 +2,26 @@
 # Run from the repo root: pyinstaller packaging/pendulum.spec
 
 import os
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_all
 
 block_cipher = None
 
 # Collect all submodules from the backend package
+numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all("numpy")
+
 hidden_imports = (
     collect_submodules("pendulum_cp")
     + collect_submodules("uvicorn")
     + collect_submodules("fastapi")
     + collect_submodules("anyio")
     + collect_submodules("starlette")
-    + collect_submodules("numpy")
+    + numpy_hiddenimports
     + [
         "uvicorn.logging",
         "uvicorn.loops.auto",
         "uvicorn.protocols.http.auto",
         "uvicorn.protocols.websockets.auto",
         "uvicorn.lifespan.on",
-        "numpy",
         # matlab.engine is NOT bundled — it is loaded from the MATLAB
         # installation at runtime by run.py's _inject_matlab_path()
     ]
@@ -41,8 +42,8 @@ datas = [
 a = Analysis(
     [os.path.join(repo_root, "backend", "run.py")],
     pathex=[os.path.join(repo_root, "backend", "src")],
-    binaries=[],
-    datas=datas,
+    binaries=numpy_binaries,
+    datas=datas + numpy_datas,
     hiddenimports=hidden_imports,
     hookspath=[],
     hooksconfig={},
