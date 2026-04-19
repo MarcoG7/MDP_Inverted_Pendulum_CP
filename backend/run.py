@@ -11,6 +11,10 @@ import webbrowser
 import socket
 from pathlib import Path
 
+# Holds os.add_dll_directory() handles for the process lifetime.
+# If these are GC'd the directories are removed from the DLL search path.
+_dll_dirs: list = []
+
 
 def _get_log_path() -> Path:
     if sys.platform == "win32":
@@ -94,7 +98,6 @@ def _inject_matlab_path():
          on this machine, eliminating the need for 'pip install matlabengine'
     """
     import platform
-    import stat
 
     matlab_root = _find_matlab_root()
     if not matlab_root:
@@ -150,6 +153,7 @@ def _inject_matlab_path():
 
     # Generate _arch.txt pointing to the native libs in the real MATLAB install
     arch_txt = dst / "engine" / "_arch.txt"
+    arch_txt.parent.mkdir(parents=True, exist_ok=True)
     arch_content = "\n".join([
         arch,
         os.path.join(matlab_root, "bin", arch),
@@ -172,7 +176,11 @@ def _inject_matlab_path():
             os.path.join(matlab_root, "extern", "bin", arch),
         ]:
             if os.path.isdir(dll_dir):
-                os.add_dll_directory(dll_dir)
+                try:
+                    _dll_dirs.append(os.add_dll_directory(dll_dir))
+                    print(f"[run.py] DLL search path: {dll_dir}", flush=True)
+                except OSError as e:
+                    print(f"[run.py] WARNING: Could not register DLL dir {dll_dir}: {e}", flush=True)
 
     print(f"[run.py] MATLAB engine configured ({arch})", flush=True)
 

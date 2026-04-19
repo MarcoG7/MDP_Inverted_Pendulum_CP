@@ -14,6 +14,7 @@ cd "$REPO_ROOT"
 echo "==> Running PyInstaller..."
 source backend/.venv/bin/activate
 pip install pyinstaller --quiet
+pip install -e backend --quiet
 pyinstaller packaging/pendulum.spec --distpath packaging/dist --workpath packaging/build --noconfirm
 
 echo "==> Creating launcher and desktop shortcut..."
