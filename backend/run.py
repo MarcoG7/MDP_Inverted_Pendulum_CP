@@ -91,11 +91,9 @@ def _inject_matlab_path():
     """Set up the MATLAB Engine for Python without requiring a pip install.
 
     PyInstaller cannot bundle the matlab package — its native components
-    reference absolute paths inside the MATLAB installation. Instead we:
-      1. Find the user's MATLAB root at runtime
-      2. Inject MATLAB's own Python engine dist into sys.path
-      3. Generate _arch.txt dynamically so it points to the correct paths
-         on this machine, eliminating the need for 'pip install matlabengine'
+    reference absolute paths inside the MATLAB installation. Instead we
+    add MATLAB's own Python engine dist directly to sys.path and register
+    all necessary DLL directories on Windows.
     """
     import platform
 
@@ -110,7 +108,6 @@ def _inject_matlab_path():
 
     print(f"[run.py] MATLAB root: {matlab_root}", flush=True)
 
-    # Determine platform architecture string used by MATLAB
     system = platform.system()
     machine = platform.machine()
     if system == "Linux" and machine == "x86_64":
@@ -126,54 +123,26 @@ def _inject_matlab_path():
 
     matlab_engine_dist = os.path.join(matlab_root, "extern", "engines", "python", "dist")
 
-    # Copy MATLAB's pure Python files to a user-writable location and generate
-    # _arch.txt there. The native .so/.dll libs are NOT copied — _arch.txt
-    # points back to them inside the MATLAB installation.
-    if sys.platform == "win32":
-        cache_base = Path(os.environ.get("APPDATA", Path.home()))
-    else:
-        cache_base = Path.home() / ".local" / "share"
-    engine_cache = cache_base / "InvertedPendulumCP" / "matlab_engine"
-
-    import shutil as _shutil
-    src = Path(matlab_engine_dist) / "matlab"
-    dst = engine_cache / "matlab"
-
-    # Re-copy whenever the MATLAB version changes (detected by mtime difference)
-    src_mtime = src.stat().st_mtime if src.exists() else 0
-    stamp = engine_cache / ".matlab_mtime"
-    cached_mtime = float(stamp.read_text()) if stamp.exists() else 0
-
-    if src_mtime != cached_mtime:
-        if engine_cache.exists():
-            _shutil.rmtree(engine_cache)
-        # Copy only Python files — skip native binaries
-        _shutil.copytree(src, dst, ignore=_shutil.ignore_patterns("*.so", "*.dll", "*.pyd"))
-        stamp.write_text(str(src_mtime))
-
-    # Generate _arch.txt pointing to the native libs in the real MATLAB install
-    arch_txt = dst / "engine" / "_arch.txt"
-    arch_txt.parent.mkdir(parents=True, exist_ok=True)
-    arch_content = "\n".join([
-        arch,
-        os.path.join(matlab_root, "bin", arch),
+    # Add MATLAB's Python engine dist to sys.path so 'import matlab.engine' resolves
+    # to MATLAB's own files. Also add the arch-specific native dir directly so that
+    # matlabmultidimarrayforpython is importable regardless of whether
+    # matlab/__init__.py successfully reads _arch.txt.
+    for path in [
+        matlab_engine_dist,
         os.path.join(matlab_engine_dist, "matlab", "engine", arch),
-        os.path.join(matlab_root, "extern", "bin", arch),
-    ]) + "\n"
-    arch_txt.write_text(arch_content)
+    ]:
+        if os.path.isdir(path) and path not in sys.path:
+            sys.path.insert(0, path)
 
-    cache_str = str(engine_cache)
-    if cache_str not in sys.path:
-        sys.path.insert(0, cache_str)
-
-    # On Windows with Python 3.8+, PATH is no longer searched for DLLs loaded
-    # by extension modules. Register MATLAB's bin directory explicitly so that
-    # matlabmultidimarrayforpython.pyd can find its runtime dependencies.
+    # On Windows with Python 3.8+, PATH is no longer searched for DLLs loaded by
+    # extension modules. Register all MATLAB DLL directories explicitly.
+    # runtime/arch contains core engine DLLs in R2022b+ that were previously in bin/arch.
     if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
         for dll_dir in [
             os.path.join(matlab_root, "bin", arch),
             os.path.join(matlab_engine_dist, "matlab", "engine", arch),
             os.path.join(matlab_root, "extern", "bin", arch),
+            os.path.join(matlab_root, "runtime", arch),
         ]:
             if os.path.isdir(dll_dir):
                 try:
