@@ -1,6 +1,7 @@
 # PyInstaller spec file for Inverted Pendulum CP
 # Run from the repo root: pyinstaller packaging/pendulum.spec
 
+import glob
 import os
 import sys
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_all
@@ -9,6 +10,15 @@ block_cipher = None
 
 # Collect all submodules from the backend package
 numpy_datas, numpy_binaries, numpy_hiddenimports = collect_all("numpy")
+
+# pydantic_core ships a compiled extension (_pydantic_core.cpXXX-win_amd64.pyd)
+# that collect_all misses; find and bundle it explicitly.
+import pydantic_core as _pc
+_pc_dir = os.path.dirname(_pc.__file__)
+pydantic_core_binaries = [
+    (f, "pydantic_core") for f in glob.glob(os.path.join(_pc_dir, "_pydantic_core*.pyd"))
+]
+pydantic_core_datas, _, pydantic_core_hiddenimports = collect_all("pydantic_core")
 
 # MATLAB's matlabmultidimarrayforpython.pyd is built against Python's stable ABI
 # and imports from python3.dll (not python3XX.dll). PyInstaller bundles python3XX.dll
@@ -61,9 +71,9 @@ datas = [
 a = Analysis(
     [os.path.join(repo_root, "backend", "run.py")],
     pathex=[os.path.join(repo_root, "backend", "src")],
-    binaries=numpy_binaries + extra_binaries,
-    datas=datas + numpy_datas,
-    hiddenimports=hidden_imports,
+    binaries=numpy_binaries + pydantic_core_binaries + extra_binaries,
+    datas=datas + numpy_datas + pydantic_core_datas,
+    hiddenimports=hidden_imports + pydantic_core_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
