@@ -6,7 +6,13 @@ import time
 from pendulum_cp.sources.base import DataSource
 from pendulum_cp.models.schemas import TelemetryData
 
-MATLAB_DIR = Path(__file__).resolve().parents[4] / "simulations" / "matlab"
+def _get_matlab_dir() -> Path:
+    import sys
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "simulations" / "matlab"
+    return Path(__file__).resolve().parents[4] / "simulations" / "matlab"
+
+MATLAB_DIR = _get_matlab_dir()
 
 
 class MATLABScriptSource(DataSource):

@@ -7,7 +7,13 @@ import numpy as np
 
 from pendulum_cp.sources.engine_manager import engine_manager
 
-SIMULINK_DIR = Path(__file__).resolve().parents[4] / "simulations" / "simulink"
+def _get_simulink_dir() -> Path:
+    import sys
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "simulations" / "simulink"
+    return Path(__file__).resolve().parents[4] / "simulations" / "simulink"
+
+SIMULINK_DIR = _get_simulink_dir()
 MODEL_NAME = "nonlinear_model_IP"
 SETUP_SCRIPT = "IP"
 TARGET_DT = 0.05  # must match PUSH_INTERVAL in session.py

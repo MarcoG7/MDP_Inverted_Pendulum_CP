@@ -30,7 +30,11 @@ repo_root = os.path.abspath(os.path.join(SPECPATH, ".."))
 angular_dist = os.path.join(
     repo_root, "frontend", "pendulum-cp-ui", "dist", "pendulum-cp-ui", "browser"
 )
-datas = [(angular_dist, "static")]
+simulations_dir = os.path.join(repo_root, "simulations")
+datas = [
+    (angular_dist, "static"),
+    (simulations_dir, "simulations"),
+]
 
 a = Analysis(
     [os.path.join(repo_root, "backend", "run.py")],
