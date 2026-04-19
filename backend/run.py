@@ -162,6 +162,18 @@ def _inject_matlab_path():
     if cache_str not in sys.path:
         sys.path.insert(0, cache_str)
 
+    # On Windows with Python 3.8+, PATH is no longer searched for DLLs loaded
+    # by extension modules. Register MATLAB's bin directory explicitly so that
+    # matlabmultidimarrayforpython.pyd can find its runtime dependencies.
+    if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+        for dll_dir in [
+            os.path.join(matlab_root, "bin", arch),
+            os.path.join(matlab_engine_dist, "matlab", "engine", arch),
+            os.path.join(matlab_root, "extern", "bin", arch),
+        ]:
+            if os.path.isdir(dll_dir):
+                os.add_dll_directory(dll_dir)
+
     print(f"[run.py] MATLAB engine configured ({arch})", flush=True)
 
 

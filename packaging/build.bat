@@ -12,6 +12,7 @@ cd ..\..
 echo =^> Running PyInstaller...
 call backend\.venv\Scripts\activate.bat
 pip install pyinstaller --quiet
+pip install -e backend --quiet
 pyinstaller packaging\pendulum.spec --distpath packaging\dist --workpath packaging\build --noconfirm
 if errorlevel 1 (echo PyInstaller failed & exit /b 1)
 
