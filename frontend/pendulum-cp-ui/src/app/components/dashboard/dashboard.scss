@@ -1,25 +1,87 @@
-.dashboard-layout {
+.db-root {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 24px;
+  flex-direction: column;
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 24px;
-
-  app-control-panel {
-    flex: 0 0 clamp(200px, 15%, 280px);
-  }
-
-  mat-card {
-    flex: 1 1 0;
-    min-width: 0;
-  }
+  padding: 16px 24px 24px;
+  gap: 12px;
 }
 
-.db-graphs {
+.db-topbar {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+// ── Layout container ───────────────────────────────────────────────────────────
+
+.dashboard-layout {
+  display: flex;
+  gap: 24px;
+
+  // Side by side: control panel left sidebar, graphs in a column
+  &.layout-side-by-side {
+    flex-direction: row;
+    align-items: flex-start;
+
+    app-control-panel {
+      flex: 0 0 clamp(200px, 15%, 280px);
+    }
+
+    mat-card {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .db-graphs {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+
+  // Stacked: control panel full-width at top, graphs in 2×2 grid below
+  &.layout-stacked {
+    flex-direction: column;
+
+    app-control-panel {
+      height: auto !important;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    mat-card {
+      width: 100%;
+    }
+
+    .db-graphs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      --graph-height: 240px;
+    }
+  }
+
+  // Graph focus: sidebar stays, graphs fill remaining space as 2×2 grid
+  &.layout-graph-focus {
+    flex-direction: row;
+    align-items: flex-start;
+
+    app-control-panel {
+      flex: 0 0 clamp(200px, 15%, 280px);
+    }
+
+    mat-card {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .db-graphs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      --graph-height: 300px;
+    }
+  }
 }

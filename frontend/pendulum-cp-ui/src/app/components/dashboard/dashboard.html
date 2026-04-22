@@ -1,26 +1,43 @@
-<div class="dashboard-layout">
-  <app-control-panel
-    [loadingStage]="loadingStage()"
-    [loadingMessage]="loadingMessage()"
-    [engineReady]="engineReady()"
-    [simulationReady]="simulationReady()"
-    (start)="start($event)"
-    (stop)="stop()"
-    (reset)="reset()"
-  />
+<div class="db-root">
+  <div class="db-topbar">
+    <mat-button-toggle-group [value]="layout()" (change)="layout.set($event.value)" hideSingleSelectionIndicator>
+      <mat-button-toggle value="side-by-side" matTooltip="Side by side">
+        <mat-icon>vertical_split</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle value="graph-focus" matTooltip="Graph focus">
+        <mat-icon>grid_view</mat-icon>
+      </mat-button-toggle>
+      <mat-button-toggle value="stacked" matTooltip="Stacked">
+        <mat-icon>horizontal_split</mat-icon>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
 
-  <mat-card appearance="outlined">
-    <mat-card-header>
-      <mat-card-title>Dashboard - {{ formatTime(elapsedTime()) }}</mat-card-title>
-    </mat-card-header>
+  <div class="dashboard-layout" [ngClass]="'layout-' + layout()">
+    <app-control-panel
+      [layout]="layout()"
+      [loadingStage]="loadingStage()"
+      [loadingMessage]="loadingMessage()"
+      [engineReady]="engineReady()"
+      [simulationReady]="simulationReady()"
+      (start)="start($event)"
+      (stop)="stop()"
+      (reset)="reset()"
+    />
 
-    <mat-card-content>
-      <div class="db-graphs">
-        <app-realtime-graph #angleGraph [config]="angleConfig" />
-        <app-realtime-graph #angularVelocityGraph [config]="angularVelocityConfig" />
-        <app-realtime-graph #positionGraph [config]="positionConfig" />
-        <app-realtime-graph #velocityGraph [config]="velocityConfig" />
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Dashboard - {{ formatTime(elapsedTime()) }}</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="db-graphs">
+          <app-realtime-graph #angleGraph [config]="angleConfig" />
+          <app-realtime-graph #angularVelocityGraph [config]="angularVelocityConfig" />
+          <app-realtime-graph #positionGraph [config]="positionConfig" />
+          <app-realtime-graph #velocityGraph [config]="velocityConfig" />
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
 </div>

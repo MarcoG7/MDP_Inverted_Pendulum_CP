@@ -1,14 +1,19 @@
+import { NgClass } from '@angular/common';
 import { Component, DestroyRef, effect, inject, signal, viewChild } from '@angular/core';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../services/api.service';
 import { ControlPanel } from '../control-panel/control-panel';
 import { RealtimeGraph } from '../realtime-graph/realtime-graph';
 import { IGraphConfig } from '../../models/graph-config';
 import { IStartParams } from '../../models/start-params';
+import { LayoutType } from '../../models/layout';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ControlPanel, RealtimeGraph, MatCardModule],
+  imports: [NgClass, ControlPanel, RealtimeGraph, MatCardModule, MatButtonToggleModule, MatIconModule, MatTooltipModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -22,6 +27,7 @@ export class Dashboard {
   readonly simulationReady = this.api.simulationReady;
 
   elapsedTime = signal(0);
+  layout = signal<LayoutType>('graph-focus');
 
   private readonly angleGraph = viewChild<RealtimeGraph>('angleGraph');
   private readonly angularVelocityGraph = viewChild<RealtimeGraph>('angularVelocityGraph');

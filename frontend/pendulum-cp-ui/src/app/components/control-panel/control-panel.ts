@@ -1,11 +1,11 @@
 import { Component, inject, input, output } from '@angular/core';
-import { NgModel } from '@angular/forms';
+import { FormsModule, NgModel } from '@angular/forms';
 import { CsvExportService } from '../../services/csv-export.service';
 import { ApiService } from '../../services/api.service';
 import { ControlMethod, DataSource, IStartParams } from '../../models/start-params';
 import { LoadingStage } from '../../models/system-status';
 import { DEFAULT_SIMULATION_PARAMS, IParamRange, ISimulationParams, PARAM_RANGES } from '../../models/simulation-params';
-import { FormsModule } from '@angular/forms';
+import { LayoutType } from '../../models/layout';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -36,6 +36,7 @@ export class ControlPanel {
   selectedDataSource: DataSource = 'src-sim';
   selectedControlMethod: ControlMethod = 'default';
 
+  layout = input<LayoutType>('side-by-side');
   readonly ranges = PARAM_RANGES;
 
   // Simulation parameters — editable copy, sent on Save

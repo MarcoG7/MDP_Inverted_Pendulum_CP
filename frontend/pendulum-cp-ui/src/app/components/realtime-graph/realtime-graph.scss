@@ -8,7 +8,7 @@
 
   &.large {
     width: 100%;
-    height: 200px;
+    height: var(--graph-height, 200px);
   }
 
   &.small {
