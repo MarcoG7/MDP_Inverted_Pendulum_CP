@@ -32,10 +32,14 @@ class MATLABScriptSource(DataSource):
     print(f"[MATLAB Script] Engine ready. ({time.time() - t0:.1f}s)", flush=True)
 
   async def start(self, on_progress=None) -> None:
-    print("[MATLAB Script] Starting...", flush=True)
-    await asyncio.to_thread(self._connect)
-    self._t = 0.0
-    self._y = [-3.0, 00, pi + 0.1, 0.0]
+    # Only connect and reset state on a fresh start; preserve _t/_y on resume.
+    if self._eng is None:
+      print("[MATLAB Script] Starting...", flush=True)
+      await asyncio.to_thread(self._connect)
+      self._t = 0.0
+      self._y = [-3.0, 00, pi + 0.1, 0.0]
+    else:
+      print("[MATLAB Script] Resuming...", flush=True)
     self._running = True
     print("[MATLAB Script] Running.", flush=True)
 

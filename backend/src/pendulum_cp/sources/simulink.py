@@ -30,15 +30,17 @@ class SimulinkSource(DataSource):
         await on_progress("running_simulation", "Running Simulink model...")
       await asyncio.to_thread(simulink_runner._results_event.wait)
 
-    time, x, xd, theta, thetad = simulink_runner.get_results()
-    self._time   = list(time)
-    self._x      = list(x)
-    self._xd     = list(xd)
-    self._theta  = list(theta)
-    self._thetad = list(thetad)
-    self._frame  = 0
+    # Only load data and reset frame on a fresh start; preserve frame on resume.
+    if not self._time:
+      time, x, xd, theta, thetad = simulink_runner.get_results()
+      self._time   = list(time)
+      self._x      = list(x)
+      self._xd     = list(xd)
+      self._theta  = list(theta)
+      self._thetad = list(thetad)
+      self._frame  = 0
     self._running = True
-    print(f"[Simulink] Replay started — {len(self._time)} frames.", flush=True)
+    print(f"[Simulink] Replay started at frame {self._frame}/{len(self._time)}.", flush=True)
 
   async def stop(self) -> None:
     self._running = False

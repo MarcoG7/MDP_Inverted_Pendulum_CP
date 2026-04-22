@@ -50,10 +50,19 @@ class SessionManager:
       print(f"[Session] Unknown source '{data_source_key}'.", flush=True)
       return f"Unknown source '{data_source_key}'"
 
-    print(f"[Session] Starting — source={data_source_key}, ctrl={ctrl_method or 'default'}", flush=True)
-    self._data_source = source_cls()
-    self._data_source_key = data_source_key
-    self._ctrl_method = ctrl_method
+    # Reuse the existing source instance when resuming (same source, just paused).
+    # Only create a new instance for a fresh start or a source type change.
+    resuming = (
+      self._data_source is not None
+      and self._data_source_key == data_source_key
+    )
+    if resuming:
+      print(f"[Session] Resuming — source={data_source_key}, ctrl={ctrl_method or 'default'}", flush=True)
+    else:
+      print(f"[Session] Starting — source={data_source_key}, ctrl={ctrl_method or 'default'}", flush=True)
+      self._data_source = source_cls()
+      self._data_source_key = data_source_key
+      self._ctrl_method = ctrl_method
     asyncio.create_task(self._start_source())
     return "Starting"
 
