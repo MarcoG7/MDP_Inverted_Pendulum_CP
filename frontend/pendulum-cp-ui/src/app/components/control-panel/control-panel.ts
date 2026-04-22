@@ -1,9 +1,10 @@
 import { Component, inject, input, output } from '@angular/core';
+import { NgModel } from '@angular/forms';
 import { CsvExportService } from '../../services/csv-export.service';
 import { ApiService } from '../../services/api.service';
 import { ControlMethod, DataSource, IStartParams } from '../../models/start-params';
 import { LoadingStage } from '../../models/system-status';
-import { DEFAULT_SIMULATION_PARAMS, ISimulationParams } from '../../models/simulation-params';
+import { DEFAULT_SIMULATION_PARAMS, IParamRange, ISimulationParams, PARAM_RANGES } from '../../models/simulation-params';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -34,6 +35,8 @@ export class ControlPanel {
 
   selectedDataSource: DataSource = 'src-sim';
   selectedControlMethod: ControlMethod = 'default';
+
+  readonly ranges = PARAM_RANGES;
 
   // Simulation parameters — editable copy, sent on Save
   params: ISimulationParams = { ...DEFAULT_SIMULATION_PARAMS };
@@ -97,5 +100,12 @@ export class ControlPanel {
 
   onResetParams(): void {
     this.params = { ...DEFAULT_SIMULATION_PARAMS };
+  }
+
+  getError(ctrl: NgModel, range: IParamRange): string {
+    if (ctrl.hasError('required')) return 'Required';
+    if (ctrl.hasError('min')) return `Min: ${range.min}`;
+    if (ctrl.hasError('max')) return `Max: ${range.max}`;
+    return 'Invalid';
   }
 }

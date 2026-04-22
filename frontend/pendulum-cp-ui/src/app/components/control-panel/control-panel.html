@@ -47,44 +47,90 @@
       <div class="cp-params">
         <span class="cp-params-title">Simulation Parameters</span>
 
-        <div class="cp-params-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Cart Mass (kg)</mat-label>
-            <input matInput type="number" step="any" min="0" [(ngModel)]="params.cart_mass" name="cart_mass">
-          </mat-form-field>
+        <form #paramsForm="ngForm">
+          <div class="cp-params-list">
+            <div class="param-row">
+              <span class="param-label">Duration (s)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.stop_time.min" [max]="ranges.stop_time.max" [step]="ranges.stop_time.step"
+                  [(ngModel)]="params.stop_time" name="stop_time" #stop_time="ngModel">
+                @if (stop_time.invalid && stop_time.touched) {
+                  <mat-error>{{ getError(stop_time, ranges.stop_time) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Pendulum Mass (kg)</mat-label>
-            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_mass" name="pendulum_mass">
-          </mat-form-field>
+            <mat-divider class="param-divider" />
 
-          <mat-form-field appearance="outline">
-            <mat-label>Pendulum Length (m)</mat-label>
-            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_length" name="pendulum_length">
-          </mat-form-field>
+            <div class="param-row">
+              <span class="param-label">Cart Mass (kg)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.cart_mass.min" [max]="ranges.cart_mass.max" [step]="ranges.cart_mass.step"
+                  [(ngModel)]="params.cart_mass" name="cart_mass" #cart_mass="ngModel">
+                @if (cart_mass.invalid && cart_mass.touched) {
+                  <mat-error>{{ getError(cart_mass, ranges.cart_mass) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Cart Friction (N/m/s)</mat-label>
-            <input matInput type="number" step="any" min="0" [(ngModel)]="params.cart_friction" name="cart_friction">
-          </mat-form-field>
+            <div class="param-row">
+              <span class="param-label">Pendulum Mass (kg)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.pendulum_mass.min" [max]="ranges.pendulum_mass.max" [step]="ranges.pendulum_mass.step"
+                  [(ngModel)]="params.pendulum_mass" name="pendulum_mass" #pendulum_mass="ngModel">
+                @if (pendulum_mass.invalid && pendulum_mass.touched) {
+                  <mat-error>{{ getError(pendulum_mass, ranges.pendulum_mass) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Pendulum Damping (N·m·rad⁻¹·s⁻¹)</mat-label>
-            <input matInput type="number" step="any" min="0" [(ngModel)]="params.pendulum_damping" name="pendulum_damping">
-          </mat-form-field>
+            <div class="param-row">
+              <span class="param-label">Pendulum Length (m)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.pendulum_length.min" [max]="ranges.pendulum_length.max" [step]="ranges.pendulum_length.step"
+                  [(ngModel)]="params.pendulum_length" name="pendulum_length" #pendulum_length="ngModel">
+                @if (pendulum_length.invalid && pendulum_length.touched) {
+                  <mat-error>{{ getError(pendulum_length, ranges.pendulum_length) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Duration (s)</mat-label>
-            <input matInput type="number" step="1" min="1" [(ngModel)]="params.stop_time" name="stop_time">
-          </mat-form-field>
-        </div>
+            <div class="param-row">
+              <span class="param-label">Cart Friction (N/m/s)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.cart_friction.min" [max]="ranges.cart_friction.max" [step]="ranges.cart_friction.step"
+                  [(ngModel)]="params.cart_friction" name="cart_friction" #cart_friction="ngModel">
+                @if (cart_friction.invalid && cart_friction.touched) {
+                  <mat-error>{{ getError(cart_friction, ranges.cart_friction) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
 
-        <div class="cp-params-actions">
-          <button mat-flat-button (click)="onSaveParams()" [disabled]="isLoading">
-            Save &amp; Recompile
-          </button>
-          <button mat-stroked-button (click)="onResetParams()">Reset to Defaults</button>
-        </div>
+            <div class="param-row">
+              <span class="param-label">Pendulum Damping (N·m·s/rad)</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <input matInput type="number" required
+                  [min]="ranges.pendulum_damping.min" [max]="ranges.pendulum_damping.max" [step]="ranges.pendulum_damping.step"
+                  [(ngModel)]="params.pendulum_damping" name="pendulum_damping" #pendulum_damping="ngModel">
+                @if (pendulum_damping.invalid && pendulum_damping.touched) {
+                  <mat-error>{{ getError(pendulum_damping, ranges.pendulum_damping) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="cp-params-actions">
+            <button mat-flat-button (click)="onSaveParams()" [disabled]="isLoading || paramsForm.invalid">
+              Save &amp; Recompile
+            </button>
+            <button mat-stroked-button (click)="onResetParams()">Reset to Defaults</button>
+          </div>
+        </form>
       </div>
     }
   </mat-card-content>
