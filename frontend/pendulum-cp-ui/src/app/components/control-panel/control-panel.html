@@ -51,6 +51,12 @@
           <div class="cp-stacked-params">
             <span class="cp-params-title">Simulation Parameters</span>
 
+            <label class="cp-animation-toggle">
+              <mat-checkbox [(ngModel)]="params.show_animation" name="show_animation_stacked">
+                Show 3D Animation
+              </mat-checkbox>
+            </label>
+
             <form #stackedParamsForm="ngForm">
               <div class="cp-stacked-params-grid">
                 <div class="param-row">
@@ -182,6 +188,12 @@
 
         <div class="cp-params">
           <span class="cp-params-title">Simulation Parameters</span>
+
+          <label class="cp-animation-toggle">
+            <mat-checkbox [(ngModel)]="params.show_animation" name="show_animation">
+              Show 3D Animation
+            </mat-checkbox>
+          </label>
 
           <form #paramsForm="ngForm">
             <div class="cp-params-list">

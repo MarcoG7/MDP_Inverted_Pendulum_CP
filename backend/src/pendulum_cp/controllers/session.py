@@ -10,7 +10,7 @@ from pendulum_cp.sources.simulink import SimulinkSource
 from pendulum_cp.sources.engine_manager import engine_manager
 from pendulum_cp.sources.simulink_runner import simulink_runner
 
-PUSH_INTERVAL = 0.05  # seconds = 20 Hz
+PUSH_INTERVAL = 0.01  # seconds = 100 Hz
 
 SOURCE_MAP: dict[str, type[DataSource]] = {
   "src-sim": SimulationSource,

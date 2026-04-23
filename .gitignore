@@ -15,6 +15,7 @@ node_modules/
 # MATLAB
 *.asv
 *.mex*
+*.mat
 
 # IDE
 .vscode/
@@ -26,9 +27,11 @@ Thumbs.db
 
 # Simulink
 *.slxc
+*.slx.r2018a
 *.slx.r2022b
 *.slx.autosave
 slprj/
+simulations/old_simulink/
 
 # Packaging / build artifacts
 packaging/build/

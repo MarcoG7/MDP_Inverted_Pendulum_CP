@@ -8,6 +8,7 @@ import { DEFAULT_SIMULATION_PARAMS, IParamRange, ISimulationParams, PARAM_RANGES
 import { LayoutType } from '../../models/layout';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
     FormsModule,
     MatCardModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,

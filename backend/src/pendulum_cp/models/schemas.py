@@ -14,12 +14,13 @@ class TelemetryData(BaseModel):
 
 class SimulationParams(BaseModel):
   '''Editable physical parameters for the Simulink model.'''
-  cart_mass: float = 0.5178          # M_c — kg
-  pendulum_mass: float = 0.12        # m   — kg
-  pendulum_length: float = 0.15      # l   — m (pivot to CoG)
-  cart_friction: float = 0.63        # c   — N/m/s
-  pendulum_damping: float = 0.00007892  # b — N·m·rad⁻¹·s⁻¹
+  cart_mass: float = 0.8145          # M_c / M — kg
+  pendulum_mass: float = 0.12        # m       — kg
+  pendulum_length: float = 0.15      # l       — m (pivot to CoG)
+  cart_friction: float = 0.63        # c       — N/m/s
+  pendulum_damping: float = 0.00007892  # b    — N·m·rad⁻¹·s⁻¹
   stop_time: float = 10.0            # simulation duration — s
+  show_animation: bool = False       # run 3D animation after simulation
 
 
 class SystemStatus(BaseModel):

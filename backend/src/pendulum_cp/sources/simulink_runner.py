@@ -14,19 +14,22 @@ def _get_simulink_dir() -> Path:
     return Path(__file__).resolve().parents[4] / "simulations" / "simulink"
 
 SIMULINK_DIR = _get_simulink_dir()
-MODEL_NAME = "nonlinear_model_IP"
-SETUP_SCRIPT = "IP"
-TARGET_DT = 0.05  # must match PUSH_INTERVAL in session.py
+MODEL_NAME = "IP_SwingUp_Design"
+SETUP_SCRIPT = "Init_Setup_LQRArd"
+ANIMATION_SCRIPT = "animation3d1"
+ANIMATION_FLAG = SIMULINK_DIR / "animation_ready.flag"
+TARGET_DT = 0.01  # 100 Hz — must match PUSH_INTERVAL in session.py
 
 
 @dataclass
 class SimulationParams:
-  cart_mass: float = 0.5178        # M_c  — kg
-  pendulum_mass: float = 0.12      # m    — kg
-  pendulum_length: float = 0.15    # l    — m (pivot to CoG)
-  cart_friction: float = 0.63      # c    — N/m/s
-  pendulum_damping: float = 0.00007892  # b  — N·m·rad⁻¹·s⁻¹
+  cart_mass: float = 0.8145        # M_c / M  — kg
+  pendulum_mass: float = 0.12      # m        — kg
+  pendulum_length: float = 0.15    # l        — m (pivot to CoG)
+  cart_friction: float = 0.63      # c        — N/m/s
+  pendulum_damping: float = 0.00007892  # b   — N·m·rad⁻¹·s⁻¹
   stop_time: float = 10.0          # simulation duration — s
+  show_animation: bool = False     # run 3D animation after simulation
 
 
 class SimulinkRunner:
@@ -47,7 +50,8 @@ class SimulinkRunner:
     self._theta: list[float] = []
     self._thetad: list[float] = []
     self._results_event = threading.Event()
-    self._compile_lock = threading.Lock()  # one compilation at a time
+    self._compile_lock = threading.Lock()  # serialises compilation AND animation (shared engine)
+    self._animation_thread: threading.Thread | None = None
 
   # ------------------------------------------------------------------
   # Public API
@@ -95,7 +99,11 @@ class SimulinkRunner:
 
   @property
   def is_compiling(self) -> bool:
-    return self._compile_lock.locked()
+    return self._compile_lock.locked() and not self.is_animating
+
+  @property
+  def is_animating(self) -> bool:
+    return self._animation_thread is not None and self._animation_thread.is_alive()
 
   @property
   def params(self) -> SimulationParams:
@@ -104,6 +112,49 @@ class SimulinkRunner:
   def get_results(self) -> tuple[list, list, list, list, list]:
     """Return (time, x, xd, theta, thetad) — only valid after has_results."""
     return self._time, self._x, self._xd, self._theta, self._thetad
+
+  def start_animation(self) -> None:
+    """Start the 3D animation and block until the window is ready (max 30 s).
+
+    Intended to be called via asyncio.to_thread() so it does not block the
+    event loop.  The animation itself continues running in the background
+    after this method returns.  The compile lock is held for the duration of
+    the animation so recompiles queue up rather than racing the engine.
+    Calling again while already animating is a no-op.
+    """
+    if not self.has_results:
+      print("[Simulink Runner] Animation skipped — no results yet.", flush=True)
+      return
+    if self.is_animating:
+      print("[Simulink Runner] Animation already running.", flush=True)
+      return
+
+    # Remove any stale flag from a previous run.
+    if ANIMATION_FLAG.exists():
+      ANIMATION_FLAG.unlink()
+
+    self._animation_thread = threading.Thread(
+      target=self._animate,
+      daemon=True,
+      name="simulink-animation",
+    )
+    self._animation_thread.start()
+
+    # Block until animation3d1.m writes the flag (window rendered) or timeout.
+    print("[Simulink Runner] Waiting for animation window...", flush=True)
+    deadline = time.monotonic() + 30.0
+    while not ANIMATION_FLAG.exists():
+      if time.monotonic() > deadline:
+        print("[Simulink Runner] Animation ready timeout — starting anyway.", flush=True)
+        break
+      if not self._animation_thread.is_alive():
+        print("[Simulink Runner] Animation thread ended before ready.", flush=True)
+        break
+      time.sleep(0.05)
+
+    if ANIMATION_FLAG.exists():
+      ANIMATION_FLAG.unlink()
+    print("[Simulink Runner] Animation window ready.", flush=True)
 
   # ------------------------------------------------------------------
   # Internal
@@ -116,10 +167,20 @@ class SimulinkRunner:
     except Exception:
       pass  # error already printed in run_blocking
 
+  def _animate(self) -> None:
+    eng = engine_manager.get_engine()
+    with self._compile_lock:
+      try:
+        print("[Simulink Runner] 3D animation started.", flush=True)
+        eng.run(ANIMATION_SCRIPT, nargout=0)
+        print("[Simulink Runner] 3D animation finished.", flush=True)
+      except Exception as e:
+        print(f"[Simulink Runner] Animation error: {e}", flush=True)
+
   def _compile(self, params: SimulationParams, notify) -> None:
     eng = engine_manager.get_engine()
 
-    # IP.m starts with 'clear all', so run it first to establish a clean baseline
+    # Init_Setup_LQRArd.m starts with 'clear all', so run it first to establish a clean baseline
     eng.addpath(str(SIMULINK_DIR), nargout=0)
     eng.cd(str(SIMULINK_DIR), nargout=0)
     eng.run(SETUP_SCRIPT, nargout=0)
@@ -128,31 +189,37 @@ class SimulinkRunner:
     eng.eval(f"load_system('{MODEL_NAME}');", nargout=0)
 
     # Override physical params and recompute all derived quantities.
-    # Mirrors the equations in IP.m so the Simulink model sees consistent values.
+    # Mirrors the equations in Init_Setup_LQRArd.m so the Simulink model sees consistent values.
+    # M (total cart mass incl. motor) and M_c (cart body) are distinct in Init_Setup_LQRArd.m
+    # (0.8155 vs 0.8145). We keep M offset fixed; only M_c is user-controlled.
+    M_offset = 0.8155 - 0.8145  # fixed hardware offset between total and body mass
     override = f"""
 M_c = {params.cart_mass};
+M   = {params.cart_mass + M_offset};
 m   = {params.pendulum_mass};
 l   = {params.pendulum_length};
 c   = {params.cart_friction};
 b   = {params.pendulum_damping};
 g   = 9.81;
-I = (1/12)*(m*(2*l)^2);
-Er = 2*m*g*l;
-alpha = I*(M_c+m) + M_c*m*l^2;
-A = [0 0 1 0; 0 0 0 1; ...
-     0 (m^2*l^2*g/alpha) (-c*(I+m*l^2)/alpha) (-b*m*l/alpha); ...
-     0 ((M_c+m)*m*g*l/alpha) (-c*m*l/alpha) (-(M_c+m)*b/alpha)];
-B = [0; 0; (I+m*l^2)/alpha; (m*l)/alpha];
-C = eye(4);
-D = 0;
-sys_c = ss(A, B, C, D);
-Q  = [5000 0 0 0; 0 1000 0 0; 0 0 0 0; 0 0 0 0];
-R  = 0.008;
-KK = lqr(A, B, Q, R);
-Ts = 0.005;
-sys_d = c2d(sys_c, Ts, 'zoh');
-Ad = sys_d.A; Bd = sys_d.B; Cd = sys_d.C; Dd = sys_d.D;
-Kd = dlqr(Ad, Bd, Q, R);
+r = 0.006; L = 0.046; Rm = 12.5; kb = 0.031; kt = 0.031; n = 3;
+Er  = 2*m*g*l + 0.0199;
+I   = 1/12*m*(2*l)^2;
+AA  = I*(M+m) + M*m*(l^2);
+aa  = (((m*l)^2)*g)/AA;
+bb  = ((I+m*(l^2))/AA)*(c + (kb*kt)/(Rm*(r^2)));
+cc  = (b*m*l)/AA;
+dd  = (m*g*l*(M+m))/AA;
+ee  = ((m*l)/AA)*(c + (kb*kt)/(Rm*(r^2)));
+ff  = ((M+m)*b)/AA;
+mm  = ((I+m*(l^2))*kt)/(AA*Rm*r);
+nn  = (m*l*kt)/(AA*Rm*r);
+A   = [0 0 1 0; 0 0 0 1; 0 aa -bb -cc; 0 dd -ee -ff];
+B   = [0; 0; mm; nn];
+Q   = diag([1200 1500 10000 1000]);
+R   = 0.035;
+KK  = lqr(A, B, Q, R);
+p3  = [-8; -10; -4.5; -5.8];
+k   = place(A, B, p3);
 set_param('{MODEL_NAME}', 'StopTime', '{params.stop_time}');
 """
     eng.eval(override, nargout=0)
