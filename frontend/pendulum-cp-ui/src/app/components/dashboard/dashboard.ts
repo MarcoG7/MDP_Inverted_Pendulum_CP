@@ -45,7 +45,7 @@ export class Dashboard {
 
   readonly angularVelocityConfig: IGraphConfig = {
     title: 'Angular Velocity',
-    yAxisLabel: "θ' (rad/s)",
+    yAxisLabel: "θ' (deg/s)",
     lineColor: '#3b82f6',
     windowSeconds: this.GRAPH_WINDOW_SECONDS,
   };

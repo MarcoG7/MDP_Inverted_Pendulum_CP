@@ -37,6 +37,12 @@ export class RealtimeGraph {
     labels: [],
   };
 
+  private readonly INITIAL_WINDOW = 10; // seconds shown before the axis starts expanding
+
+  private _pendingRender = false;
+  private _latestTimestamp = 0;
+  private _maxWindow = 60;
+
   chartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -44,6 +50,8 @@ export class RealtimeGraph {
     scales: {
       x: {
         type: 'linear',
+        min: 0,
+        max: this.INITIAL_WINDOW,
         title: { display: false, text: 'Time (seconds)' },
         ticks: { callback: (value) => Number(value).toFixed(1) + 's' },
       },
@@ -65,28 +73,55 @@ export class RealtimeGraph {
   }
 
   addDataPoint(timestamp: number, value: number): void {
-    const window = this.config().windowSeconds ?? 30;
+    const maxWindow = this.config().windowSeconds ?? 60;
     const data = this.chartData.datasets[0].data as { x: number; y: number }[];
 
     data.push({ x: timestamp, y: value });
 
-    // Drop points that have fallend outside the time window
-    const cutoff = timestamp - window;
+    // Drop points that have fallen outside the rolling window
+    const cutoff = timestamp - maxWindow;
     while (data.length > 0 && data[0].x < cutoff) data.shift();
 
-    // Slide x-axis to keep a fixed width window
-    const chartInstance = this.chart()?.chart;
-    if (chartInstance && data.length > 0) {
-      const xScale = chartInstance.options.scales?.['x'] as any;
-      xScale.min = data[0].x;
-      xScale.max = data[0].x + window;
-    }
+    this._latestTimestamp = timestamp;
+    this._maxWindow = maxWindow;
     this.updateStatistics();
+
+    // Coalesce rapid updates — render at most once per animation frame (~60 fps)
+    if (!this._pendingRender) {
+      this._pendingRender = true;
+      requestAnimationFrame(() => {
+        this._flushRender();
+        this._pendingRender = false;
+      });
+    }
+  }
+
+  private _flushRender(): void {
+    const chartInstance = this.chart()?.chart;
+    if (chartInstance) {
+      const xScale = chartInstance.options.scales?.['x'] as any;
+      const timestamp = this._latestTimestamp;
+      const maxWindow = this._maxWindow;
+      if (timestamp <= maxWindow) {
+        xScale.min = 0;
+        xScale.max = Math.max(timestamp, this.INITIAL_WINDOW);
+      } else {
+        xScale.min = timestamp - maxWindow;
+        xScale.max = timestamp;
+      }
+    }
     this.chart()?.update();
   }
 
   clearData(): void {
     this.chartData.datasets[0].data = [];
+    // Reset axis to the initial fixed window
+    const chartInstance = this.chart()?.chart;
+    if (chartInstance) {
+      const xScale = chartInstance.options.scales?.['x'] as any;
+      xScale.min = 0;
+      xScale.max = this.INITIAL_WINDOW;
+    }
     this.currentValue.set(null);
     this.minValue.set(null);
     this.maxValue.set(null);
