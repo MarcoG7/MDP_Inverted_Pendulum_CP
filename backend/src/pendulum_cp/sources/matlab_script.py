@@ -1,9 +1,9 @@
 from pathlib import Path
 from math import pi
 import asyncio
-import time
 
 from pendulum_cp.sources.base import DataSource
+from pendulum_cp.sources.engine_manager import engine_manager
 from pendulum_cp.models.schemas import TelemetryData
 
 def _get_matlab_dir() -> Path:
@@ -20,24 +20,21 @@ class MATLABScriptSource(DataSource):
     self._running = False
     self._eng = None
     self._t: float = 0.0    # Current simulation time
-    self._y: list[float] = [-3.0, 00, pi + 0.1, 0.0]  # Initial values from the matlab file we are simulating
+    self._y: list[float] = [-3.0, 0, pi + 0.1, 0.0]  # Initial values from the matlab file we are simulating
     self._dt: float = 0.05  # Time step per get_data(), this matches the push loop rate
 
-  def _connect(self) -> None:
-    print("[MATLAB Script] Starting engine...", flush=True)
-    t0 = time.time()
-    import matlab.engine
-    self._eng = matlab.engine.start_matlab()
+  def _setup(self) -> None:
+    self._eng = engine_manager.get_engine()
     self._eng.addpath(str(MATLAB_DIR), nargout=0)
-    print(f"[MATLAB Script] Engine ready. ({time.time() - t0:.1f}s)", flush=True)
+    print("[MATLAB Script] Engine ready.", flush=True)
 
   async def start(self, on_progress=None) -> None:
     # Only connect and reset state on a fresh start; preserve _t/_y on resume.
     if self._eng is None:
       print("[MATLAB Script] Starting...", flush=True)
-      await asyncio.to_thread(self._connect)
+      await asyncio.to_thread(self._setup)
       self._t = 0.0
-      self._y = [-3.0, 00, pi + 0.1, 0.0]
+      self._y = [-3.0, 0, pi + 0.1, 0.0]
     else:
       print("[MATLAB Script] Resuming...", flush=True)
     self._running = True
@@ -48,16 +45,12 @@ class MATLABScriptSource(DataSource):
     print("[MATLAB Script] Stopped.", flush=True)
 
   async def reset(self) -> None:
+    # Engine is shared — do not quit it, just release the reference.
     self._running = False
+    self._eng = None
     self._t = 0.0
     self._y = []
-    if self._eng:
-      print("[MATLAB Script] Shutting down engine...", flush=True)
-      await asyncio.to_thread(self._eng.quit)
-      self._eng = None
-      print("[MATLAB Script] Engine stopped. Reset complete.", flush=True)
-    else:
-      print("[MATLAB Script] Reset.", flush=True)
+    print("[MATLAB Script] Reset.", flush=True)
   
   def _step(self) -> None:
     import matlab
